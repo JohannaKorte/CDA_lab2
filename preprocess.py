@@ -18,12 +18,12 @@ def preprocess(csvfile):
             date_string = row[0]
             # Convert date string to datetime object
             date = datetime.strptime(date_string, '%d/%m/%y %H')
-            datadict['date'] = date
+            datadict['date'].append(date)
             for i in range(1,len(keys)):
                 if datadict[keys[i]] == []:
                     datadict[keys[i]] = [float(row[i])]
                 else:
-                    datadict[keys[i]].append([float(row[i])])
+                    datadict[keys[i]].append(float(row[i]))
     return datadict
 
 
