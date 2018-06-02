@@ -2,7 +2,9 @@ import preprocess
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats.stats import pearsonr
-
+import pandas as pd
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
 filename = 'Data/BATADAL_train1.csv'
 data = preprocess.preprocess(filename)
@@ -15,6 +17,8 @@ def visualize(data):
             continue
         else:
             plt.plot(data['date'][:1000], data[key][:1000])
+            plt.xlabel('Date')
+            plt.ylabel('Signal')
             plt.title(key)
             plt.show()
 
@@ -54,8 +58,6 @@ def correlate(data):
     plt.show()
     return
 
-#correlate(data)
-
 
 def plot_corrs(data, sensors):
     """Plots the first 1000 timepoints of the given sensors to see if there is a correlation"""
@@ -74,4 +76,42 @@ def plot_corrs(data, sensors):
              rotation_mode="anchor", fontsize=5)
     plt.show()
 
-#plot_corrs(data, ['F_PU1', 'F_PU2', 'S_PU2'])
+
+def predict(data, signal, vis, w):
+    datadf = data[signal]
+    df = pd.DataFrame({'Count': datadf[:1100]})
+    train = df[:1000]
+    test = df[999:1100]
+    mov_av = test.copy()
+    mov_av['Count'] = train['Count'].rolling(w).mean().iloc[-1]
+    rms = sqrt(mean_squared_error(test['Count'], mov_av['Count']))
+    if vis:
+        plt.figure(figsize=(8,4))
+        plt.plot(train['Count'], label='Train')
+        plt.plot(test['Count'], label='Test')
+        plt.plot(mov_av['Count'], label='Moving Average Forecast')
+        plt.legend(loc='best')
+        plt.xlabel('Datapoints')
+        plt.ylabel('Signal')
+        plt.title(signal)
+        plt.show()
+    return rms
+
+
+def best_pred(data, signal, window, vis):
+    best_rms = 10000
+    best_window = 0
+    for i in range(1,window):
+        rms = predict(data, signal, False, i)
+        if rms < best_rms:
+            best_window = i
+            best_rms = rms
+    print('Best window: %i, with RMSE = %f' % (best_rms, best_rms))
+    if vis:
+        print(predict(data, signal, True, best_window))
+
+
+#visualize(data)
+# correlate(data)
+# plot_corrs(data, ['F_PU1', 'F_PU2', 'S_PU2'])
+print(best_pred(data, 'F_PU1', 160, True))
