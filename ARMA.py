@@ -28,7 +28,8 @@ def plot_autocorr(data, var, lags):
     plt.axhline(y=0,linestyle='--',color='gray')
     plt.axhline(y=-1.96/np.sqrt(len(data[var])),linestyle='--',color='gray')
     plt.axhline(y=1.96/np.sqrt(len(data[var])),linestyle='--',color='gray')
-    plt.title('Autocorrelation Function')
+    #plt.title('Autocorrelation Function')
+    plt.title(var)
 
     # Plot PACF
     plt.subplot(122)
@@ -40,12 +41,19 @@ def plot_autocorr(data, var, lags):
     plt.tight_layout()
     plt.show()
 
-#plot_autocorr(data, 'F_PU11', 50)
+#plot_autocorr(data, 'F_PU1', 50)
 
 # TRAIN ARMA
 # ______________________________________________________________________________________________________________________
 # Order determined using the acf and pcf plots
-order_dict = {'F_PU1': [9, 2]}
+order_dict = {'L_T1': [10, 2], 'L_T2': [6, 1], 'L_T3': [3, 1], 'L_T4': [4, 1], 'L_T5': [2, 1], 'L_T6': [2, 1],
+              'L_T7': [2, 1], 'F_PU1': [9, 2], 'S_PU1': [0, 0], 'F_PU2': [9, 2], 'S_PU2': [9, 2], 'F_PU3': [0, 0],
+              'S_PU3': [0, 0], 'F_PU4': [3, 1], 'S_PU4': [3, 1], 'F_PU5': [0, 0], 'S_PU5': [0, 0], 'F_PU6': [3, 1],
+              'S_PU6': [2, 1], 'F_PU7': [1, 1], 'S_PU7': [1, 1], 'F_PU8': [2, 1], 'S_PU8': [2, 1], 'F_PU9': [0, 1],
+              'S_PU9': [0, 1], 'F_PU10': [1, 1], 'S_PU10': [1, 1], 'F_PU11': [2, 1], 'S_PU11': [2, 1], 'F_V2': [5, 2],
+              'S_V2': [5, 2], 'P_J280': [9, 2], 'P_J269': [9, 2], 'P_J300': [4, 2], 'P_J256': [2, 1], 'P_J289': [4, 1],
+              'P_J415': [1, 1], 'P_J302': [3, 2], 'P_J306': [2, 1], 'P_J307': [3, 1], 'P_J317': [1, 1], 'P_J14': [5, 2],
+              'P_J422': [5, 2]}
 
 
 def train_arma(data, var, begin, end, order_dict, plot):
@@ -74,19 +82,19 @@ def train_arma(data, var, begin, end, order_dict, plot):
 # train_arma(data, 'F_PU1', 0, len(data), order_dict, False)
 
 
-def predict_arma(train, test, var, begin, end, order_dict):
+def predict_arma(train, test, var, begin, end, order_dict, k, n):
     """ Given a train and test dataset, the sensor 'var' to be modelled, and the order dict, to determine the suitable
-    ARMA order, returns a prediction for the test set from datapoint 50 onwards."""
+    ARMA order, returns a prediction for the test set from datapoint k onwards until datapoint n."""
     # Train ARMA model on train data and get its parameters
     results = train_arma(train, var, begin, end, order_dict, False)
     params = results.params
-    # Setup a new ARMA model using the old parameters and the first 50 test variables.
-    new_model = ARMA(test[var][:50], order=(order_dict[var][0], order_dict[var][1]))
+    # Setup a new ARMA model using the old parameters and the first k test variables, to predict n-k values.
+    new_model = ARMA(test[var][:k], order=(order_dict[var][0], order_dict[var][1]))
     new_results = new_model.fit(start_params=params, disp=-1)
-    new_prediction = new_results.forecast(steps=350)[0]
-    plt.plot(range(400), test[var][:400])
-    plt.plot(range(50,400), new_prediction)
+    new_prediction = new_results.forecast(steps=n - k)[0]
+    plt.plot(range(n), test[var][:n])
+    plt.plot(range(k, n), new_prediction)
     plt.show()
     return
 
-print(predict_arma(data, anomalydata, 'F_PU1', 0, len(data), order_dict))
+print(predict_arma(data, anomalydata, 'F_PU1', 0, len(data), order_dict, 50, 400))
